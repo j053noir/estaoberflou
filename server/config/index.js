@@ -6,6 +6,8 @@ const config = {
   },
   database: {
     url: process.env.DATABASE_URL,
+    username: process.env.DATABASE_USERNAME,
+    password: process.env.DATABASE_PASSWORD,
   },
   pagination: {
     limit: 10,
