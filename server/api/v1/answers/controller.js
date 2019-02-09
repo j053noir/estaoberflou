@@ -18,7 +18,9 @@ exports.id = (req, res, next, id) => {
 };
 
 exports.create = (req, res, next) => {
-  const { body = {} } = req;
+  const { body = {}, decoded = '' } = req;
+  const { _id = null } = decoded;
+  body.user = _id;
   const newAnswer = new answer(body);
   newAnswer
     .save()
