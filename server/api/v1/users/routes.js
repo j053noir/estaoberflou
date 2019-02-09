@@ -1,19 +1,25 @@
 const router = require('express').Router();
-
 const controller = require('./controller');
+const { auth, me } = require('../auth');
 
-router.route('/').get(controller.all);
-router.route('/user').post(controller.crear);
+const tasksRouter = require('../tasks/routes');
 
-router
-  .route('/:email')
-  .get(controller.read)
-  .put(controller.update)
-  .patch(controller.update);
+router.param('id', controller.id);
 
 router
-  .route('/:email/:activo')
-  .put(controller.activo)
-  .patch(controller.activo);
+  .route('/')
+  .get(auth, controller.all)
+  .post(controller.create);
+
+router.route('/signup').post(controller.create);
+router.route('/signin').post(controller.signin);
+
+router
+  .route('/:id')
+  .get(auth, controller.read)
+  .put(auth, me, controller.update)
+  .delete(auth, me, controller.delete);
+
+router.use('/:author/tasks', tasksRouter);
 
 module.exports = router;

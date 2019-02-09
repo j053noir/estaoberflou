@@ -1,160 +1,182 @@
-const ModelUser = require('./model');
+const { paginationParseParams } = require.main.require('./server/utils/');
+const { sortParseParams, sortCompactToStr } = require.main.require(
+  './server/utils', // eslint-disable-line comma-dangle
+);
+const { Model, fields } = require('./model');
+const { signToken } = require('../auth');
 
-
-exports.read = (req, res, next) => {
-  const { email = '' } = req.params;
-  // res.json(email);
-  ModelUser.findOne({ email })
+exports.id = (req, res, next, id) => {
+  Model.findById(id)
     .exec()
-    .then((doc) => {
+    .then(doc => {
       if (!doc) {
-        const message = 'Not found';
+        const message = `${Model.modelName} (${id}) not found`;
 
-        next({
+        res.json({
+          success: false,
           message,
-          statusCode: 404,
-          type: 'warn',
         });
       } else {
         req.doc = doc;
-        res.json(doc);
         next();
       }
     })
-    .catch((err) => {
+    .catch(err => {
+      next(new Error(err));
+    });
+};
+
+exports.signin = (req, res, next) => {
+  const { body = {} } = req;
+  const { email = '', password = '' } = body;
+
+  if (email === '' || password === '') {
+    const message = 'Email or password are required';
+
+    next({
+      success: false,
+      message,
+      statusCode: 400,
+      type: 'info',
+    });
+  } else {
+    let user = {};
+    Model.findOne({ email })
+      .exec()
+      .then(doc => {
+        if (!doc) {
+          const message = 'Email or password are not valid';
+
+          next({
+            success: false,
+            message,
+            statusCode: 200,
+            type: 'info',
+          });
+        }
+        user = doc;
+        return doc.verifyPassword(password);
+      })
+      .then(verified => {
+        if (!verified) {
+          const message = 'Email or password are not valid';
+
+          next({
+            success: false,
+            message,
+            statusCode: 200,
+            type: 'info',
+          });
+        } else {
+          const { _id } = user;
+          const token = signToken({ _id });
+
+          res.json({
+            success: true,
+            item: user,
+            meta: {
+              token,
+            },
+          });
+        }
+      })
+      .catch(err => {
+        next(new Error(err));
+      });
+  }
+};
+
+exports.create = (req, res, next) => {
+  const { body } = req;
+  const doc = new Model(body);
+
+  doc
+    .save()
+    .then(created => {
+      res.status(201);
+      res.json({
+        success: true,
+        item: created,
+      });
+    })
+    .catch(err => {
       next(new Error(err));
     });
 };
 
 exports.all = (req, res, next) => {
-  ModelUser
-    .find()
-    .exec()
-    .then((all) => {
-      if (!all) {
-        const message = 'not found';
-        next({
-          message,
-          statusCode: 404,
-          type: 'warn',
-        });
-      } else {
-        res.json({
-          success: true,
-          items: all,
-        });
-        next();
-      }
+  const { query = {} } = req;
+  const { limit, page, skip } = paginationParseParams(query);
+  const { sortBy, direction } = sortParseParams(query, fields);
+
+  const all = Model.find()
+    .sort(sortCompactToStr(sortBy, direction))
+    .limit(limit)
+    .skip(skip);
+  const count = Model.countDocuments();
+
+  Promise.all([all.exec(), count.exec()])
+    .then(data => {
+      const [docs, total] = data;
+      const pages = Math.ceil(total / limit);
+
+      res.json({
+        success: true,
+        items: docs,
+        meta: {
+          limit,
+          skip,
+          total,
+          page,
+          pages,
+          sortBy,
+          direction,
+        },
+      });
     })
-    .catch((err) => {
+    .catch(err => {
       next(new Error(err));
     });
 };
 
-exports.crear = (req, res, next) => {
-  const { body = {} } = req;
-  const { email = '' } = body;
-  const newUser = new ModelUser(body);
-
-  // find user by email
-  ModelUser
-    .findOne({ email })
-    .exec()
-    .then((existe) => {
-      if (existe) {
-        const message = 'User already exists';
-        next({
-          message,
-          statuCode: 404,
-          type: 'warn',
-        });
-      } else {
-        newUser
-          .save()
-          .then((newDoc) => {
-            res.json(newDoc);
-            next();
-          })
-          .catch((exception) => {
-            next(new Error(exception));
-          });
-      }
-    })
-    .catch((err) => {
-      next(new Error(err));
-    });
+exports.read = (req, res, next) => {
+  const { doc } = req;
+  res.json({
+    success: true,
+    item: doc,
+  });
 };
 
 exports.update = (req, res, next) => {
-  const { body = {} } = req;
-  const { email = '' } = req.params;
+  const { doc, body } = req;
 
-  ModelUser.findOne({ email })
-    .exec()
-    .then((existUser) => {
-      if (!existUser) {
-        const message = 'Not found';
-        next({
-          message,
-          statuCode: 404,
-          type: 'warn',
-        });
-      } else {
-        // entonces actualizamos el documento
-        // Object.assign(doc, body);
-        // res.json("Nombre: "+body.nombre);
-        existUser.nombre = body.nombre;
-        existUser.apellido = body.apellido;
-        existUser
-          .save()
-          .then((updated) => {
-            res.json(updated);
-          })
-          .catch((err) => {
-            next(new Error(err));
-          });
-      }
+  Object.assign(doc, body);
+
+  doc
+    .save()
+    .then(updated => {
+      res.json({
+        success: true,
+        item: updated,
+      });
     })
-    .catch((err) => {
+    .catch(err => {
       next(new Error(err));
     });
 };
 
-exports.activo = (req, res, next) => {
-  const { activo = '', email = '' } = req.params;
+exports.delete = (req, res, next) => {
+  const { doc } = req;
 
-  if (activo !== '0' && activo !== '1') {
-    const message = 'Parametro no valido';
-    next({
-      message,
-      statuCode: 400,
-      type: 'warn',
-    });
-  }
-  ModelUser.findOne({ email })
-    .exec()
-    .then((existUser) => {
-      if (!existUser) {
-        const message = 'Not found';
-        next({
-          message,
-          statuCode: 404,
-          type: 'warn',
-        });
-      } else {
-        // entonces actualizamos cambiamos el attr activo        
-        existUser.activo = activo;
-        existUser
-          .save()
-          .then((updated) => {
-            res.json(updated);
-          })
-          .catch((err) => {
-            next(new Error(err));
-          });
-      }
+  doc
+    .remove()
+    .then(removed => {
+      res.json({
+        success: true,
+        item: removed,
+      });
     })
-    .catch((err) => {
+    .catch(err => {
       next(new Error(err));
     });
 };

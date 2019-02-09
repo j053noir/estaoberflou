@@ -5,14 +5,17 @@ const logger = require('./config/logger');
 
 exports.connect = () => {
   const { database } = config;
-  const url = `mongodb://${database.url}`;
+  let url;
 
-  mongoose.connect(
-    url,
-    {
-      useNewUrlParser: true,
-    },
-  );
+  if (database.username === null && database.password === null) {
+    url = `mongodb://@${database.url}`;
+  } else {
+    url = `mongodb://${database.username}:${database.password}@${database.url}`;
+  }
+
+  mongoose.connect(url, {
+    useNewUrlParser: true,
+  });
 
   mongoose.connection.on('open', () => {
     logger.info('Database connected');
@@ -22,7 +25,7 @@ exports.connect = () => {
     logger.info('Database disconnected');
   });
 
-  mongoose.connection.on('error', (err) => {
+  mongoose.connection.on('error', err => {
     logger.error(`Database connection error: ${err}`);
   });
 
