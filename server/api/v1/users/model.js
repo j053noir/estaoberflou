@@ -17,17 +17,22 @@ const fields = {
   email: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
+    unique: true,
     lowercase: true,
     validate: {
       validator: v => /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v),
       message: props => `${props.value} is not a valid email.`,
     },
   },
+  photo_urL: {
+    type: String,
+    default: 'https://via.placeholder.com/150',
+  },
   password: {
     type: String,
     required: true,
+    trim: true,
     min: 6,
   },
 };
@@ -58,11 +63,6 @@ user.pre('save', function save(next) {
     next();
   }
 });
-
-module.exports = {
-  Model: mongoose.model('user', user),
-  fields,
-};
 
 user.methods.verifyPassword = function verifyPassword(password) {
   return compare(password, this.password);
