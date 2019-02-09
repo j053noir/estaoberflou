@@ -1,4 +1,4 @@
-const { ModelTask = {}, fields = {}, references = {} } = require('./model.js');
+const { question = {}, fields = {}, references = {} } = require('./model.js');
 const { paginationParseParams } = require.main.require('./server/utils/');
 const { sortParseParams, sortCompactToStr } = require.main.require('./server/utils');
 
@@ -7,12 +7,12 @@ const referencesNames = Object.getOwnPropertyNames(references);
 exports.id = (req, res, next, id) => {
   const authorReference = referencesNames.join(' ');
 
-  ModelTask
+  question
     .findById(id)
     .populate(authorReference)
     .exec()
-    .then((task) => {
-      req.task = task;
+    .then((data) => {
+      req.question = data;
       next();
     })
     .catch((err) => {
@@ -26,12 +26,12 @@ exports.all = (req, res, next) => {
   const { sortBy, direction } = sortParseParams(query, fields);
   const populate = referencesNames.join(' ');
 
-  const all = ModelTask.find()
+  const all = question.find()
     .sort(sortCompactToStr(sortBy, direction))
     .limit(limit)
     .skip(skip)
     .populate(populate);
-  const count = ModelTask.countDocuments();
+  const count = question.countDocuments();
 
   Promise.all([all.exec(), count.exec()])
     .then((data) => {
@@ -60,11 +60,11 @@ exports.all = (req, res, next) => {
 
 exports.create = (req, res, next) => {
   const { body = {} } = req;
-  const newTask = new ModelTask(body);
-  newTask
+  const newQuestion = new question(body);
+  newQuestion
     .save()
-    .then((task) => {
-      res.json(task);
+    .then((question) => {
+      res.json(question);
       next();
     })
     .catch((exception) => {
@@ -73,19 +73,19 @@ exports.create = (req, res, next) => {
 };
 
 exports.read = (req, res, next) => {
-  const { task } = req;
+  const { question } = req;
   res.json({
     success: true,
-    item: task,
+    item: question,
   });
 };
 
 exports.update = (req, res, next) => {
-  const { task, body } = req;
+  const { question, body } = req;
 
-  Object.assign(task, body);
+  Object.assign(question, body);
 
-  task
+  question
     .save()
     .then((updated) => {
       res.json({
@@ -99,9 +99,9 @@ exports.update = (req, res, next) => {
 };
 
 exports.delete = (req, res, next) => {
-  const { task } = req;
+  const { question } = req;
 
-  task
+  question
     .remove()
     .then((removed) => {
       res.json({

@@ -2,28 +2,32 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const fields = {
-  description: {
+  text: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
   },
 };
 
 const references = {
-  author: {
+  user: {
     type: Schema.Types.ObjectId,
     ref: 'user',
     required: true,
   },
+  question: {
+    type: Schema.Types.ObjectId,
+    ref: 'question',
+    required: true,
+  },
 };
 
-const task = new Schema(Object.assign(fields, references), {
+const answer = new Schema(Object.assign(fields, references), {
   timestamps: true,
 });
 
 module.exports = {
-  ModelTask: mongoose.model('task', task),
+  answer: mongoose.model('answer', answer),
   fields,
   references,
 };
