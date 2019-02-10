@@ -58,9 +58,10 @@ const me = (req, res, next) => {
 };
 
 const owner = (req, res, next) => {
-  const { decoded = {}, doc = {} } = req;
+  const { decoded = {}, body = {} } = req;
   const { _id = null } = decoded;
-  const { id } = doc.author;
+  const id = body.user;
+
   if (_id !== id) {
     const message = 'Forbidden';
 

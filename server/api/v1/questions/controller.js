@@ -6,6 +6,7 @@ const referencesNames = Object.getOwnPropertyNames(references);
 
 exports.id = (req, res, next, id) => {
   const authorReference = referencesNames.join(' ');
+
   question
     .findById(id)
     .populate(authorReference)
@@ -85,13 +86,8 @@ exports.read = (req, res, next) => {
 };
 
 exports.update = (req, res, next) => {
-  const { question, body, decoded } = req;
-  const { _id = null } = decoded;
-  if (_id) {
-    body.user = _id;
-  }
+  const { question, body } = req;
   Object.assign(question, body);
-
   question
     .save()
     .then((updated) => {

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const controller = require('./controller');
-const { auth, me } = require('../auth');
+const { auth, owner } = require('../auth');
 
 // const answersRouter = require('../answers/routes');
 
@@ -14,8 +14,8 @@ router
 router
   .route('/:id')
   .get(controller.read)
-  .put(auth, me, controller.update)
-  .delete(auth, me, controller.delete);
+  .put(auth, owner, controller.update)
+  .delete(auth, owner, controller.delete);
 
 // router.use('/:id/answers', answersRouter);
 
